@@ -1,0 +1,22 @@
+{
+    "name": "cors-proxy",
+    "version": "1.0.0",
+    "description": "A CORS proxy Express app for AWS Lambda",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "NODE_ENV=development nodemon index.js"
+    },
+    "dependencies": {
+        "axios": "^1.6.0",
+        "dotenv": "^16.4.7",
+        "express": "^4.18.2",
+        "serverless-http": "^3.2.0"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.1"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

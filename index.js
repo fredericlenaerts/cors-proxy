@@ -1,0 +1,115 @@
+require('dotenv').config()
+
+const express = require('express');
+const axios = require('axios');
+const serverless = require('serverless-http');
+const app = express();
+
+// Configuration for whitelisted domains through environment variables
+const WHITELISTED_DOMAINS = process.env.WHITELISTED_DOMAINS.split(',')
+
+// Parse JSON bodies
+app.use(express.json());
+
+// CORS headers middleware
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    // Check if the request origin is in the whitelist
+    if (WHITELISTED_DOMAINS.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        // For preflight requests, we still need to respond, but we won't include the actual origin
+        res.setHeader('Access-Control-Allow-Origin', 'null');
+    }
+
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    next();
+});
+
+// Proxy middleware
+app.all('/proxy/*', async (req, res) => {
+    try {
+        // Extract the target URL from the path
+        const targetUrl = req.params[0];
+
+        if (!targetUrl) {
+            return res.status(400).json({ error: 'Target URL is required' });
+        }
+
+        // Simple URL validation
+        let urlObj;
+        try {
+            urlObj = new URL(targetUrl);
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid URL provided' });
+        }
+
+        // Check if the domain is allowed
+        const targetDomain = `${urlObj.protocol}//${urlObj.hostname}`;
+        const isDomainAllowed = WHITELISTED_DOMAINS.some(domain => {
+            return targetDomain.startsWith(domain);
+        });
+
+        if (!isDomainAllowed) {
+            return res.status(403).json({ error: 'Domain not in whitelist' });
+        }
+
+        // Prepare headers to forward
+        const headers = { ...req.headers };
+
+        // Remove headers that might cause issues
+        delete headers.host;
+        delete headers['origin'];
+        delete headers['referer'];
+        delete headers['content-length'];
+
+        // Make the request to the target
+        const response = await axios({
+            method: req.method,
+            url: targetUrl,
+            data: req.method !== 'GET' ? req.body : undefined,
+            headers,
+            responseType: 'arraybuffer',
+            validateStatus: () => true // Accept any status code to pass through
+        });
+
+        // Forward the response headers
+        Object.entries(response.headers).forEach(([key, value]) => {
+            // Skip CORS headers, we already handled those
+            if (!key.toLowerCase().startsWith('access-control-')) {
+                res.setHeader(key, value);
+            }
+        });
+
+        // Send the response with the original status code
+        res.status(response.status).send(response.data);
+    } catch (error) {
+        console.error('Proxy error:', error);
+        res.status(500).json({ error: 'Proxy request failed', message: error.message });
+    }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`CORS proxy server running on port ${PORT}`);
+    });
+}
+
+// Wrap the Express app for AWS Lambda
+module.exports.handler = serverless(app);
