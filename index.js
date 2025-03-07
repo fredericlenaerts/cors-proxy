@@ -37,13 +37,13 @@ app.use((req, res, next) => {
 });
 
 // Proxy middleware
-app.all('/proxy/*', async (req, res) => {
+app.all('/proxy', async (req, res) => {
     try {
-        // Extract the target URL from the path
-        const targetUrl = req.params[0];
+        // Extract the target URL from query parameter
+        const targetUrl = req.query.url;
 
         if (!targetUrl) {
-            return res.status(400).json({ error: 'Target URL is required' });
+            return res.status(400).json({ error: 'Target URL is required as a query parameter' });
         }
 
         // Simple URL validation

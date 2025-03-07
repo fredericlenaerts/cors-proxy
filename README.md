@@ -53,12 +53,18 @@ npm start
 The server will run on port 3000 by default.
 
 ## Making Requests
-To proxy a request, use the /proxy/ endpoint followed by the target URL:
+To proxy a request, use the /proxy endpoint with a `url` query parameter:
 
 ```sh
-curl -i http://localhost:3000/proxy/https://example.com
+curl -i "http://localhost:3000/proxy?url=https://example.com"
+```
+
+Or with additional path and query parameters in the target URL (make sure to properly encode the URL):
+
+```sh
+curl -i "http://localhost:3000/proxy?url=https://example.com/api/data?id=123"
 ```
 
 ## API Endpoints
 GET /health - Health check endpoint  
-ALL /proxy/* - Proxy endpoint that handles all HTTP methods
+ALL /proxy - Proxy endpoint that handles all HTTP methods (requires url query parameter)
