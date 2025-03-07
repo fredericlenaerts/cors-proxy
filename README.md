@@ -33,8 +33,8 @@ PROXY_ALLOWED_DOMAINS=https://api.example.com,https://api.other-example.com
 ```
 
 The configuration uses two separate domain lists:
-- `WHITELISTED_ORIGINS`: Domains allowed to make requests to the proxy (CORS)
-- `PROXY_ALLOWED_DOMAINS`: Domains that the proxy is allowed to forward requests to
+- `WHITELISTED_ORIGINS`: Hostnames allowed to make requests to the proxy (CORS)
+- `PROXY_ALLOWED_DOMAINS`: Hostnames that the proxy is allowed to forward requests to
 
 ## Usage
 ### Local Development

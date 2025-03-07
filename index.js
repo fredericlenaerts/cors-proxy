@@ -16,23 +16,16 @@ app.use(express.json());
 app.use((req, res, next) => {
     const origin = req.headers.origin;
 
-    // Check if the request origin is in the whitelist
-    if (WHITELISTED_ORIGINS.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-    } else {
-        // For preflight requests, we still need to respond, but we won't include the actual origin
-        res.setHeader('Access-Control-Allow-Origin', 'null');
-    }
-
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin',
+        origin && WHITELISTED_ORIGINS.includes(new URL(origin).hostname) ? origin : 'null');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.append('Vary', 'Origin');
 
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    // Handle preflight
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
     next();
 });
@@ -56,10 +49,8 @@ app.all('/proxy', async (req, res) => {
         }
 
         // Check if the domain is allowed for proxying
-        const targetDomain = `${urlObj.protocol}//${urlObj.hostname}`;
-        const isDomainAllowed = PROXY_ALLOWED_DOMAINS.some(domain => {
-            return targetDomain.startsWith(domain);
-        });
+        const targetHostname = urlObj.hostname;
+        const isDomainAllowed = PROXY_ALLOWED_DOMAINS.includes(targetHostname);
 
         if (!isDomainAllowed) {
             return res.status(403).json({ error: 'Domain not allowed for proxying' });
