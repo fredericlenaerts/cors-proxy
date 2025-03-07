@@ -4,7 +4,7 @@ A secure CORS proxy server built with Express.js and designed for AWS Lambda dep
 
 ## Features
 
-- Domain whitelisting through environment variables
+- Separate CORS and proxy domain whitelisting
 - CORS headers management
 - Request proxying with header forwarding
 - Support for all HTTP methods (GET, POST, PUT, PATCH, DELETE)
@@ -28,8 +28,13 @@ npm install
 Create a .env file in the root directory:
 
 ```
-WHITELISTED_DOMAINS=https://example.com,https://other-example.com
+WHITELISTED_ORIGINS=https://example.com,https://other-example.com
+PROXY_ALLOWED_DOMAINS=https://api.example.com,https://api.other-example.com
 ```
+
+The configuration uses two separate domain lists:
+- `WHITELISTED_ORIGINS`: Domains allowed to make requests to the proxy (CORS)
+- `PROXY_ALLOWED_DOMAINS`: Domains that the proxy is allowed to forward requests to
 
 ## Usage
 ### Local Development

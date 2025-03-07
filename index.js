@@ -6,7 +6,8 @@ const serverless = require('serverless-http');
 const app = express();
 
 // Configuration for whitelisted domains through environment variables
-const WHITELISTED_DOMAINS = process.env.WHITELISTED_DOMAINS.split(',')
+const WHITELISTED_ORIGINS = process.env.WHITELISTED_ORIGINS.split(',')
+const PROXY_ALLOWED_DOMAINS = process.env.PROXY_ALLOWED_DOMAINS.split(',')
 
 // Parse JSON bodies
 app.use(express.json());
@@ -16,7 +17,7 @@ app.use((req, res, next) => {
     const origin = req.headers.origin;
 
     // Check if the request origin is in the whitelist
-    if (WHITELISTED_DOMAINS.includes(origin)) {
+    if (WHITELISTED_ORIGINS.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     } else {
         // For preflight requests, we still need to respond, but we won't include the actual origin
@@ -53,14 +54,14 @@ app.all('/proxy/*', async (req, res) => {
             return res.status(400).json({ error: 'Invalid URL provided' });
         }
 
-        // Check if the domain is allowed
+        // Check if the domain is allowed for proxying
         const targetDomain = `${urlObj.protocol}//${urlObj.hostname}`;
-        const isDomainAllowed = WHITELISTED_DOMAINS.some(domain => {
+        const isDomainAllowed = PROXY_ALLOWED_DOMAINS.some(domain => {
             return targetDomain.startsWith(domain);
         });
 
         if (!isDomainAllowed) {
-            return res.status(403).json({ error: 'Domain not in whitelist' });
+            return res.status(403).json({ error: 'Domain not allowed for proxying' });
         }
 
         // Prepare headers to forward
