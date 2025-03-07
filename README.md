@@ -28,13 +28,18 @@ npm install
 Create a .env file in the root directory:
 
 ```
-WHITELISTED_ORIGINS=https://example.com,https://other-example.com
-PROXY_ALLOWED_DOMAINS=https://api.example.com,https://api.other-example.com
+WHITELISTED_ORIGINS=example.com,*.test.com
+PROXY_ALLOWED_DOMAINS=api.example.com,*.api.test.com
 ```
 
 The configuration uses two separate domain lists:
 - `WHITELISTED_ORIGINS`: Hostnames allowed to make requests to the proxy (CORS)
 - `PROXY_ALLOWED_DOMAINS`: Hostnames that the proxy is allowed to forward requests to
+
+Both lists support wildcard subdomains using `*`. For example:
+- `*.example.com` matches any subdomain of example.com
+- `*.api.example.com` matches any subdomain of api.example.com
+- `example.com` matches only example.com exactly
 
 ## Usage
 ### Local Development

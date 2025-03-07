@@ -12,13 +12,32 @@ const PROXY_ALLOWED_DOMAINS = process.env.PROXY_ALLOWED_DOMAINS.split(',')
 // Parse JSON bodies
 app.use(express.json());
 
+// Helper function to check hostname against patterns
+function hostnameMatchesPattern(hostname, pattern) {
+    const regexPattern = pattern
+        .replace(/\./g, '\\.')
+        .replace(/\*/g, '.*');
+    return new RegExp(`^${regexPattern}$`).test(hostname);
+}
+
 // CORS headers middleware
 app.use((req, res, next) => {
     const origin = req.headers.origin;
 
+    // Check if origin is whitelisted
+    let allowedOrigin = 'null';
+    if (origin) {
+        const originHostname = new URL(origin).hostname;
+        const isWhitelisted = WHITELISTED_ORIGINS.some(pattern =>
+            hostnameMatchesPattern(originHostname, pattern)
+        );
+        if (isWhitelisted) {
+            allowedOrigin = origin;
+        }
+    }
+
     // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin',
-        origin && WHITELISTED_ORIGINS.includes(new URL(origin).hostname) ? origin : 'null');
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -50,7 +69,9 @@ app.all('/proxy', async (req, res) => {
 
         // Check if the domain is allowed for proxying
         const targetHostname = urlObj.hostname;
-        const isDomainAllowed = PROXY_ALLOWED_DOMAINS.includes(targetHostname);
+        const isDomainAllowed = PROXY_ALLOWED_DOMAINS.some(pattern =>
+            hostnameMatchesPattern(targetHostname, pattern)
+        );
 
         if (!isDomainAllowed) {
             return res.status(403).json({ error: 'Domain not allowed for proxying' });
